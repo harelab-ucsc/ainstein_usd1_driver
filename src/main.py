@@ -23,16 +23,8 @@ def decodePacket(packet):
         check += item
     check &= 0xFF
     if check == packet[-1]:
-        print(packet)
-        # size = struct.calcsize('HHHH')
-        # buff = ctypes.create_string_buffer(size)
-        # buff = struct.pack_into('HHHH', buff, *packet)
-        # tmp = struct.unpack('HHHH', packet)
-        print(np.uint16(packet[2]) << 8)
-        print(np.uint16(packet[1]))
         alt = (np.uint16(packet[2]) << 8) + np.uint16(packet[1])
         snr = packet[-2]
-        print(alt, snr)
         if snr > 13:
             return (1, alt, snr)
         else: 
@@ -46,7 +38,7 @@ def decodePacket(packet):
 
 
 def talker():
-    pub = rospy.Publisher('chatter', UInt8, queue_size=10)
+    pub = rospy.Publisher('rad_altitude', UInt8, queue_size=10)
     rospy.init_node('ainstein_usd1', anonymous=True)
     rate = rospy.Rate(100) # 100hz
 
@@ -55,15 +47,12 @@ def talker():
 
     blank_packet = [0 for _ in range(SIZE)]
     packet = deepcopy(blank_packet)
-    # pdb.set_trace()
     head_flag = 0
     while not rospy.is_shutdown():
         val = device.read()  # figure out how this interacts with timeout
         if val == b'\xfe':
-            # pdb.set_trace()
             # for i in range(SIZE):
             #     val = device.read()
-            #     print(val)
             #     if val == b'\xfe':
             #         head_flag = 1
             #     elif val == b'\x02' and head_flag:
@@ -75,7 +64,6 @@ def talker():
             val = device.read(SIZE)
             packet = np.frombuffer(val, dtype=np.uint8)
 
-            # decode the packet; pass to subroutine which calls struct 
             ret = decodePacket(packet)
             if ret[0]:
                 pub.publish()
